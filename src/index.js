@@ -1,36 +1,13 @@
 
-import _ from 'lodash';
+//import _ from 'lodash';
 import './css/styles.css';
-
-//import htmlStr from '.js/mainHTML.js';
-//const html = require('html-loader? ./main.html').default
-const html = require("html-loader!./main.html");
-
-//import dotenv from 'dotenv'
-//import { DefinePlugin } from 'webpack'
-
-/*
-plugins: [
-    new DefinePlugin({
-     // 'process.env': JSON.stringify(dotenv.config().parsed)
-    })
-]*/
-/*
-function component() {
-    const element = document.createElement('div');
-  
-    let env = process.env.TEST;
-    element.innerHTML = _.join(['Hello', 'webpack', env], ' ');
-    element.classList.add('hello');
-    const myIcon = new Image();
-    myIcon.src = interior;
-
-    element.appendChild(myIcon);
-    return element;
-  }
-  //console.log( JSON.stringify(dotenv.config().parsed))
-  console.log(process.env)
-  document.body.appendChild(component());*/
+import jQuery from 'jquery';
+import doctor from './assets/doctor.png'
+import maid from './assets/maid.png'
+import lady from './assets/lady.png'
+import lord from './assets/lord.png'
+import chef from './assets/chef.png'
+window.$ = jQuery;
 
   let hintIndex = 0;
 
@@ -38,35 +15,35 @@ function component() {
 	{
 		id: "remi",
 		fullname: "Remi, the chef",
-		image: "chef.png",
+		image: chef,
 		x: 5,
 		y: 65,
 	},
 	{
 		id: "iris",
 		fullname: "Iris, the maid",
-		image: "maid.png",
+		image: maid,
 		x: 20,
 		y: 65,
 	},
 	{
 		id: "evelyn",
 		fullname: "Evelyn, the doctor",
-		image: "doctor.png",
+		image: doctor,
 		x: 35,
 		y: 65,
 	},
 	{
 		id: "cordelia",
 		fullname: "Cordelia Darkwood, the Lady of Darkwood Manor",
-		image: "lady.png",
+		image: lady,
 		x: 60,
 		y: 65,
 	},
 	{
 		id: "lucien",
 		fullname: "Lucien Darkwood, the Lord of Darkwood Manor",
-		image: "lord.png",
+		image: lord,
 		x: 80,
 		y: 65,
 	},
@@ -81,14 +58,13 @@ const hints = [
 	'Did anyone plan to use the letter for anything?',
 	'Why was it an expensive bottle of brandy that went missing?',
 	'Could alfred have accrued debts?',
+	'Has anyone seen anything suspicious recently?',
 	'Why would alfred want to show off the letter to Lord Darkwood?'
 
 ]
 
-console.log($);
 $.ready =function () {
 	init();
-    console.log(html);
 };
 
 function init() {
@@ -105,7 +81,11 @@ function init() {
 function initListeners() {
 	$("#continue-button").on("click", closeModal);
 	$(".chat-closeButton").on("click", closeChat);
+
+	$(".character").on("click", function(){openChat($(this).data('name'))});
+	$(".question-button").on("click", function(){submitQuestion($(this).data('name'))})
     $("#solve-button").on("click", function(){openChat('solve')});
+
 	$("#intro-button").on("click", showIntro);
 	$("#hint-button").on("click", showHint);
 	$('input').on('keyup', function (e) {
@@ -123,7 +103,7 @@ function closeModal() {
 function addCharacterDOM(characterData) {
 	let characterHtml = `
     <div class="character-container" style="left:${characterData.x}%; top:${characterData.y}%;">
-        <div class="character" data-name="${characterData.id}" style="background-image:url('./assets/${characterData.image}')" onclick="openChat('${characterData.id}')"></div>
+        <div class="character" data-name="${characterData.id}" style="background-image:url('${characterData.image}')" ></div>
     </div>
     `;
 	$("#main-container").append(characterHtml);
@@ -139,7 +119,7 @@ function addChatBox(id, fullname, buttonText='Ask') {
         <div class="chat">
 		</div>
         <input class="question-input"></input>
-        <button class="question-button button" onclick="submitQuestion('${id}')">${buttonText}</button>
+        <button class="question-button button" data-name="${id}">${buttonText}</button>
     </div>
     `;
 	$("#main-container").append(chatBoxHtml);
@@ -203,8 +183,11 @@ function submitQuestion(responderId) {
 
 function sendQuestionToTwilio(responderId, inputVal, historyElem) {
 	const xhr = new XMLHttpRequest();
-	xhr.open("POST", "https://gemini-9863.twil.io/genText");
+	const auth = btoa(process.env.USER + ":" + process.env.PASS);
+	xhr.open("POST", "https://gemini-9863.twil.io/auth");
 	xhr.setRequestHeader("Content-Type", "application/json; charset=UTF-8");
+	xhr.setRequestHeader("Authorization", "Basic " + auth);
+	
 	const body = JSON.stringify({
 		character: responderId,
 		question: inputVal,
@@ -247,7 +230,8 @@ function onXHRFail(responderId, historyElem) {
 }
 
 function addChatText(responderId, responseClass, historyElem, text) {
-	const cleanedText = text.trim().replace(/\n|\r/g, "").replaceAll(`"`, "").replaceAll('#correct#','').replaceAll('#incorrect#','')
+	let cleanedText = text.trim().replace(/\n|\r/g, "").replaceAll(`"`, "")
+	cleanedText = cleanedText.replaceAll('#correct#','').replaceAll('#incorrect#','')
 
 	const chatTextHtml = `<div class="dialogue-container"><span class="${responseClass} dialogue">${cleanedText}</span></div>`;
 	historyElem.find(".chat-placeholder").parent().remove();
@@ -266,6 +250,7 @@ function addChatText(responderId, responseClass, historyElem, text) {
 }
 
 function checkAnswerCorrect(text){
+	debugger;
     if (text.includes('#correct#')){
         const htmlStr = `
         <h3>Congratulations!</h3>
